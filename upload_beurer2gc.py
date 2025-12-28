@@ -247,8 +247,15 @@ def init_api() -> Garmin | None:
             print("\nCancelled by user")
             return None
 
+
+
+"""
+ Support functions
+ =================
+"""
 def parse_datetime(date_str, time_str) -> str:
-    """Convert date from 'DD.MM.YYYY' to 'YYYY-MM-DD'."""
+    # Convert date from 'DD.MM.YYYY' to 'YYYY-MM-DD'
+    #
     iso_timestamp = date_str.strip() + "T" + time_str.strip()
     try:
         return datetime.strptime(iso_timestamp, "%d.%m.%YT%H:%M").isoformat()
@@ -256,10 +263,17 @@ def parse_datetime(date_str, time_str) -> str:
         return iso_timestamp
 
 
+
 def get_hash(measurement: dict) -> str:
+    # Calculate hash of measurements dict
+    #
     return hashlib.sha256(json.dumps(measurement, sort_keys=True, default=str).encode('utf-8')).hexdigest()
 
+
+
 def get_gc_weight_hashes(api: Garmin, dayspan=max_age_days) -> [str]:
+    # Get weight measurements from Garmin Connect and return hashes
+    #
     date_end = datetime.today().strftime('%Y-%m-%d')
     date_start = (datetime.today() - timedelta(days=dayspan)).strftime('%Y-%m-%d')
 
@@ -271,11 +285,24 @@ def get_gc_weight_hashes(api: Garmin, dayspan=max_age_days) -> [str]:
     if not success:
        print(f"Error getting weight values from garmin connect: {error_msg}")
 
-    print( gc_measurements )
+    hashes = []
+
+    for measurement in gc_measurements['dateWeightList']:
+        # make sure to use same data format as in local csv file
+        #
+        m = dict()
+        m['weight'] = round(measurement['weight'] / 1000, 1)
+        m['timestamp'] = datetime.fromtimestamp( measurement['timestampGMT'] / 1000 ).isoformat()
+
+        hashes.append( get_hash(m) )
+
+    return hashes
 
 
 
 def get_gc_bloodp_hashes(api: Garmin, dayspan=max_age_days) -> [str]:
+    # Get blood pressure measurements from Garmin Connect and return hashes
+    #
     date_end = datetime.today().strftime('%Y-%m-%d')
     date_start = (datetime.today() - timedelta(days=dayspan)).strftime('%Y-%m-%d')
 
@@ -289,7 +316,7 @@ def get_gc_bloodp_hashes(api: Garmin, dayspan=max_age_days) -> [str]:
 
     hashes = []
 
-    # extract measurements from garmin structure
+    # Extract measurements from garmin structure
     for measurement_summary in gc_measurements['measurementSummaries']:
         for measurement in measurement_summary['measurements']:
             m = dict()
@@ -326,7 +353,8 @@ def parse_and_upload(input_filename, api: Garmin):
         elif line.startswith("Blutdruck"):
            header_bloodp = i + 1
 
-    # read weigth
+    # Read weight measurements from local csv file
+    #
     csv_content = lines[header_weight:]
     reader = csv.DictReader(csv_content, delimiter=";")
 
@@ -362,6 +390,8 @@ def parse_and_upload(input_filename, api: Garmin):
                 )
             )
 
+    # Get Garmin Connect measurement hashes to avoid upload of already existing entries
+    #
     gc_hashes = get_gc_weight_hashes(api)
 
     for (
@@ -374,24 +404,33 @@ def parse_and_upload(input_filename, api: Garmin):
         bone_mass,
         visceral_fat,
         metabolic_age
-    ) in readings_weight:
-        print(f"{timestamp}: {weight} {bmi} ...")
-    """
-        safe_api_call(
-           api.add_body_composition,
-           timestamp,
-           weight=weight,
-           bmi=bmi,
-           percent_fat=percent_fat,
-           percent_hydration=percent_water,
-           visceral_fat_mass=visceral_fat,
-           bone_mass=bone_mass,
-           muscle_mass=muscle_mass,
-           metabolic_age=metabolic_age
-        )
-    """
+        ) in readings_weight:
+             m = dict()
+             m['weight'] = weight
+             m['timestamp'] = timestamp
 
-    # read blood pressure
+             print(f"{timestamp}: {weight} kg, {bmi} ...")
+
+             if get_hash(m) not in gc_hashes:
+                print("Uploading")
+                safe_api_call(
+                    api.add_body_composition,
+                    timestamp,
+                    weight=weight,
+                    bmi=bmi,
+                    percent_fat=percent_fat,
+                    percent_hydration=percent_water,
+                    visceral_fat_mass=visceral_fat,
+                    bone_mass=bone_mass,
+                    muscle_mass=muscle_mass,
+                    metabolic_age=metabolic_age
+                )
+             else:
+                print("Duplicate entry found on Garmin Connect - not uploading")
+
+
+    # Read blood pressure measurements from local csv file
+    #
     csv_content = lines[header_bloodp:]
     reader = csv.DictReader(csv_content, delimiter=";")
 
@@ -418,7 +457,8 @@ def parse_and_upload(input_filename, api: Garmin):
                 )
             )
 
-    # avoid upload of duplicates -> check for already existing measurements on gc
+    # Get Garmin Connect measurement hashes to avoid upload of already existing entries
+    #
     gc_hashes = get_gc_bloodp_hashes(api)
 
     for (
@@ -434,7 +474,7 @@ def parse_and_upload(input_filename, api: Garmin):
              m['pulse'] = pulse
              m['timestamp'] = timestamp
 
-             print(f"{timestamp}: {sys}/{dia}, {pulse}")
+             print(f"{timestamp}: {sys}/{dia} mmHg, {pulse}")
 
              if get_hash(m) not in gc_hashes:
                 print("Uploading")
@@ -447,6 +487,7 @@ def parse_and_upload(input_filename, api: Garmin):
                 )
              else:
                 print("Duplicate entry found on Garmin Connect - not uploading")
+
 
 
 def display_user_info(api: Garmin):
