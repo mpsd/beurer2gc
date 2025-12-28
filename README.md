@@ -15,6 +15,8 @@ pip3 install garminconnect garth requests
 
 ## Inspired by / With parts of code from
 
+Based on `example.py` from https://github.com/cyberjunky/python-garminconnect
+
 https://github.com/pedropombeiro/beurer2garminconnect
 
 https://github.com/beep-projects/bpconnect
