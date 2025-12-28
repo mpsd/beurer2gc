@@ -1,5 +1,11 @@
 # beurer2gc
-Upload Beurer HealthManagerPro CSV export files to Garmin Connect
+Parse Beurer HealthManagerPro CSV export files (Blood Pressure and Weight) and upload to Garmin Connect.
+Parsing is done for german csv file format (Beurer export files)
 
-uses:
-garminconnect
+uses https://github.com/cyberjunky/python-garminconnect
+
+dependencies: pip3 install garminconnect garth requests
+
+inspired by
+https://github.com/pedropombeiro/beurer2garminconnect
+https://github.com/beep-projects/bpconnect
