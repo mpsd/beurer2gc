@@ -8,7 +8,7 @@ Parsing is done for german csv file format (Beurer export csv files)
 uses https://github.com/cyberjunky/python-garminconnect
 dependencies: `pip3 install garminconnect garth requests`
 
-inspired by
+# Inspired by / With parts of code from
 
 https://github.com/pedropombeiro/beurer2garminconnect
 
