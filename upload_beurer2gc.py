@@ -420,7 +420,7 @@ def parse_and_upload(input_filename, api: Garmin):
                     bmi=bmi,
                     percent_fat=percent_fat,
                     percent_hydration=percent_water,
-                    visceral_fat_mass=visceral_fat,
+                    visceral_fat_rating=visceral_fat,
                     bone_mass=bone_mass,
                     muscle_mass=muscle_mass,
                     metabolic_age=metabolic_age
