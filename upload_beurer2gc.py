@@ -344,21 +344,32 @@ def parse_and_upload(input_filename, api: Garmin):
 
     # Locate sections and column names
     #
-    header_weight = None
-    header_bloodp = None
+    weight_header = None
+    weight_end = None
+
+    bloodp_header = None
+    bloodp_end = None
 
     for i, line in enumerate(lines):
         if line.startswith("Gewicht"):
-           header_weight = i + 1
+           weight_header = i + 1
+
         elif line.startswith("Blutdruck"):
-           header_bloodp = i + 1
+           bloodp_header = i + 1
+
+        elif line in ['\n', '\r\n']:
+           if weight_header is not None and weight_end is None:
+              weight_end = i - 1
+           elif bloodp_header is not None and bloodp_end is None:
+              bloodp_end = i - 1
 
     # Read weight measurements from local csv file
     #
-    csv_content = lines[header_weight:]
+    csv_content = lines[weight_header:weight_end]
     reader = csv.DictReader(csv_content, delimiter=";")
 
     readings_weight = []
+
     for row in reader:
         date_orig = row.get("Datum", "").strip()
         time_orig = row.get("Uhrzeit", "").strip()
@@ -371,10 +382,7 @@ def parse_and_upload(input_filename, api: Garmin):
         visceral_fat = "0" + row.get("Viszeralfett", "").strip().replace(",", ".")
         metabolic_age = "0" + row.get("Metabolisches Alter").strip().replace(",", ".")
 
-        if not date_orig:
-           break
-
-        elif date_orig and time_orig and weight and bmi:
+        if date_orig and time_orig and weight and bmi:
             timestamp = parse_datetime(date_orig, time_orig)
             readings_weight.append(
                 (
@@ -431,22 +439,18 @@ def parse_and_upload(input_filename, api: Garmin):
 
     # Read blood pressure measurements from local csv file
     #
-    csv_content = lines[header_bloodp:]
+    csv_content = lines[bloodp_header:bloodp_end]
     reader = csv.DictReader(csv_content, delimiter=";")
 
     readings_bloodp = []
     for row in reader:
         date_orig = row.get("Datum", "").strip()
-        if date_orig.startswith("MAD"):
-           break
         time_orig = row.get("Uhrzeit", "").strip()
         sys = "0" + row.get("Sys", "").strip().replace(",", ".")
         dia = "0" + row.get("Dia", "").strip().replace(",", ".")
         pulse = "0" + row.get("Puls", "").strip().replace(",", ".")
 
-        if not date_orig:
-           break
-        elif date_orig and time_orig and sys and dia:
+        if date_orig and time_orig and sys and dia:
             timestamp = parse_datetime(date_orig, time_orig)
             readings_bloodp.append(
                 (
