@@ -272,7 +272,7 @@ def get_hash(measurement: dict) -> str:
 
 
 def get_gc_weight_hashes(api: Garmin, dayspan=max_age_days) -> [str]:
-    # Get weight measurements from Garmin Connect and return hashes
+    # Get weight measurements from Garmin Connect and return hashes - API returns one entry per day only
     #
     date_end = datetime.today().strftime('%Y-%m-%d')
     date_start = (datetime.today() - timedelta(days=dayspan)).strftime('%Y-%m-%d')
@@ -399,6 +399,8 @@ def parse_and_upload(input_filename, api: Garmin):
             )
 
     # Get Garmin Connect measurement hashes to avoid upload of already existing entries
+    #
+    # API return one entry per day only, thus not all duplicates may be found
     #
     gc_hashes = get_gc_weight_hashes(api)
 
