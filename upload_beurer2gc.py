@@ -360,9 +360,9 @@ def parse_and_upload(input_filename, api: Garmin):
 
         elif line in ['\n', '\r\n']:
            if weight_header is not None and weight_end is None:
-              weight_end = i - 1
+              weight_end = i
            elif bloodp_header is not None and bloodp_end is None:
-              bloodp_end = i - 1
+              bloodp_end = i
 
     # Read weight measurements from local csv file
     #
@@ -454,6 +454,7 @@ def parse_and_upload(input_filename, api: Garmin):
         if date_orig and time_orig and sys and dia:
             timestamp = parse_datetime(date_orig, time_orig)
             readings_bloodp.append(
+
                 (
                     timestamp,
                     int(sys),
@@ -533,7 +534,7 @@ def main():
 
     # Display user information
     display_user_info(api)
-
+    print("=" * 60)
 
     if len(sys.argv) == 2:
         input_file = sys.argv[1]
